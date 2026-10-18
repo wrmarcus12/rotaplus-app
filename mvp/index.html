@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0f1d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>SpokeRoute Pro | Otimizador de Rotas de Entrega</title>
+  
+  <!-- App Icon & Manifest -->
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Fontes Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS (Mapas) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Ícones Phosphor / Feather -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Estilos Customizados -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Bar / Header -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-logo">
+        <i class="fa-solid fa-route"></i>
+      </div>
+      <div>
+        <div style="display: flex; align-items: center;">
+          <span class="brand-title">SpokeRoute</span>
+          <span class="brand-badge">Driver Pro</span>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-muted);">Inspirado em Spoke & Circuit</div>
+      </div>
+    </div>
+
+    <!-- Estatísticas da Rota -->
+    <div class="header-center">
+      <div class="route-stats-pill">
+        <div class="stat-item">
+          <i class="fa-solid fa-location-dot" style="color: var(--accent-cyan);"></i>
+          <span class="stat-label">Paradas:</span>
+          <span id="statStopsCount" class="stat-value">0</span>
+        </div>
+        <div class="stat-item">
+          <i class="fa-solid fa-road" style="color: var(--accent-green);"></i>
+          <span class="stat-label">Distância:</span>
+          <span id="statDistance" class="stat-value">0 km</span>
+        </div>
+        <div class="stat-item">
+          <i class="fa-regular fa-clock" style="color: var(--accent-amber);"></i>
+          <span class="stat-label">Tempo:</span>
+          <span id="statTime" class="stat-value">0 min</span>
+        </div>
+        <div class="stat-item">
+          <i class="fa-solid fa-leaf" style="color: var(--accent-green);"></i>
+          <span class="stat-label">Economia:</span>
+          <span id="statSavings" class="stat-value highlight">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alternador de Visão -->
+    <div class="header-actions">
+      <div class="view-toggle">
+        <button id="btnViewDesktop" class="toggle-btn active" title="Visão Desktop / Tablet">
+          <i class="fa-solid fa-desktop"></i>
+          <span>Desktop</span>
+        </button>
+        <button id="btnViewMobile" class="toggle-btn" title="Emular Aplicativo de Celular">
+          <i class="fa-solid fa-mobile-screen"></i>
+          <span>App Mobile</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Container Principal -->
+  <div id="appContainer" class="app-container">
+    
+    <!-- Wrapper para emulação de celular no modo mobile -->
+    <div id="deviceWrapper" class="device-wrapper" style="display: contents;">
+      <div class="device-notch"></div>
+
+      <!-- Painel Lateral / Painel do Motorista -->
+      <aside class="sidebar">
+        
+        <!-- HUD da Próxima Parada (Experiência estilo Spoke no Volante) -->
+        <div id="driverHud" class="driver-hud-card">
+          <div class="hud-top">
+            <span class="hud-tag">
+              <span class="pulse-dot"></span>
+              Próxima Entrega
+            </span>
+            <span id="hudEta" class="hud-eta">Parada #1</span>
+          </div>
+          <div id="hudRecipient" class="hud-recipient">Selecione uma rota</div>
+          <div id="hudAddress" class="hud-address">Adicione paradas para começar a navegação</div>
+          <div id="hudNotes" class="hud-notes">
+            <i class="fa-solid fa-circle-info"></i>
+            <span id="hudNotesText">Nenhuma observação especial</span>
+          </div>
+          <div class="hud-actions">
+            <button id="btnHudNavigate" class="btn-navigate">
+              <i class="fa-solid fa-location-arrow"></i>
+              Navegar no Waze
+            </button>
+            <button id="btnHudComplete" class="btn-complete">
+              <i class="fa-solid fa-circle-check" style="color: var(--accent-green);"></i>
+              Dar Baixa
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra de Entrada e Controles Rápidos -->
+        <div class="controls-bar">
+          <div class="search-input-group">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input 
+              type="text" 
+              id="stopSearchInput" 
+              class="search-input" 
+              placeholder="Digite o endereço em SP, RJ, etc..."
+              autocomplete="off"
+            >
+            <button id="btnAddStopManual" class="btn-add-stop" title="Adicionar parada">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+            <!-- Dropdown com sugestões de geocodificação -->
+            <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
+          </div>
+
+          <!-- Linha de Botões de Ação -->
+          <div class="action-buttons-row">
+            <button id="btnOptimizeRoute" class="btn-optimize">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              Otimizar Rota (TSP)
+            </button>
+            <button id="btnLoadDemoRoute" class="btn-secondary" title="Carregar 7 paradas reais de teste">
+              <i class="fa-solid fa-route"></i>
+              Rota Demo SP
+            </button>
+          </div>
+        </div>
+
+        <!-- Progresso das Entregas -->
+        <div class="progress-bar-container">
+          <div class="progress-header">
+            <span>Progresso da Jornada</span>
+            <span id="progressPercentText">0 de 0 (0%)</span>
+          </div>
+          <div class="progress-track">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+        </div>
+
+        <!-- Lista de Paradas com Ordem e Ações -->
+        <div id="stopsList" class="stops-list-container">
+          <!-- Renderizado via JavaScript -->
+        </div>
+
+      </aside>
+
+      <!-- Painel do Mapa Interativo -->
+      <main class="map-container">
+        <div id="map"></div>
+
+        <!-- Controles Flutuantes do Mapa -->
+        <div class="map-floating-controls">
+          <button id="btnRecenter" class="floating-btn" title="Centralizar na rota inteira">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+          <button id="btnToggleLayer" class="floating-btn" title="Alternar tema do mapa">
+            <i class="fa-solid fa-layer-group"></i>
+          </button>
+          <button id="btnBatchImport" class="floating-btn" title="Importar lista em lote">
+            <i class="fa-solid fa-file-import"></i>
+          </button>
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       Modais do Sistema
+       ========================================================================== -->
+
+  <!-- Modal 1: Otimização de Rota (TSP Resultado) -->
+  <div id="modalOptimize" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-green); margin-right: 8px;"></i>
+          Resultado da Otimização TSP
+        </div>
+        <button class="modal-close-btn" data-close="modalOptimize">&times;</button>
+      </div>
+      
+      <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+        O algoritmo calculou a sequência ideal entre todos os pontos considerando a menor distância de deslocamento total.
+      </p>
+
+      <div class="optimization-comparison">
+        <div class="comparison-card">
+          <div class="comparison-label">Sequência Original</div>
+          <div id="optOriginalDistance" class="comparison-value">-- km</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Sem otimização</div>
+        </div>
+        <div class="comparison-card optimized">
+          <div class="comparison-label">Sequência Otimizada</div>
+          <div id="optOptimizedDistance" class="comparison-value" style="color: var(--accent-green);">-- km</div>
+          <div id="optSavingsSummary" class="comparison-saving">Economia de --%</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button id="btnConfirmOptimization" class="btn-optimize" style="flex: 1;">
+          <i class="fa-solid fa-check"></i>
+          Aplicar Rota Otimizada
+        </button>
+        <button class="btn-secondary" data-close="modalOptimize">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Comprovante de Entrega (Proof of Delivery - POD) -->
+  <div id="modalPOD" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-clipboard-check" style="color: var(--accent-green); margin-right: 8px;"></i>
+          Comprovante de Entrega (POD)
+        </div>
+        <button class="modal-close-btn" data-close="modalPOD">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <span id="podStopTitle" style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;"></span>
+        <div id="podStopAddress" style="font-size: 0.8rem; color: var(--text-secondary);"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Quem recebeu o pacote?</label>
+        <input type="text" id="podReceiverName" class="form-input" placeholder="Nome completo do recebedor">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Status da Entrega</label>
+        <select id="podDeliveryType" class="form-input">
+          <option value="delivered_receiver">Entregue em mãos ao destinatário</option>
+          <option value="delivered_doorman">Deixado com porteiro / recepção</option>
+          <option value="delivered_neighbor">Deixado com vizinho</option>
+          <option value="failed_absent">Insucesso: Destinatário ausente</option>
+          <option value="failed_address">Insucesso: Endereço não localizado</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Assinatura Digital do Recebedor (na tela):</label>
+        <div class="signature-pad-wrapper">
+          <canvas id="signatureCanvas"></canvas>
+        </div>
+        <div class="signature-actions">
+          <button id="btnClearSignature" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">
+            <i class="fa-solid fa-eraser"></i> Limpar Assinatura
+          </button>
+          <span style="font-size: 0.72rem; color: var(--text-muted);">Assine com o dedo ou mouse</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 18px;">
+        <button id="btnSavePOD" class="btn-navigate" style="flex: 1;">
+          <i class="fa-solid fa-circle-check"></i>
+          Confirmar Baixa
+        </button>
+        <button class="btn-secondary" data-close="modalPOD">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Importação em Lote -->
+  <div id="modalBatch" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-file-import" style="color: var(--accent-cyan); margin-right: 8px;"></i>
+          Importar Paradas em Lote
+        </div>
+        <button class="modal-close-btn" data-close="modalBatch">&times;</button>
+      </div>
+
+      <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 12px;">
+        Cole a sua lista de entregas (um endereço por linha) para importar direto para a rota:
+      </p>
+
+      <div class="form-group">
+        <textarea 
+          id="batchTextInput" 
+          class="form-input" 
+          rows="6" 
+          placeholder="Av. Paulista, 1000, São Paulo&#10;Rua Augusta, 1500, São Paulo&#10;Rua Oscar Freire, 800, São Paulo"
+        ></textarea>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 16px;">
+        <button id="btnProcessBatch" class="btn-optimize" style="flex: 1;">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          Processar Endereços
+        </button>
+        <button class="btn-secondary" data-close="modalBatch">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="toast-notification">
+    <i class="fa-solid fa-circle-info" style="color: var(--accent-green);"></i>
+    <span id="toastMessage">Ação executada com sucesso!</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

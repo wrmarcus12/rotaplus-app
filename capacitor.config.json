@@ -1,0 +1,14 @@
+{
+  "appId": "com.spokeroute.driver",
+  "appName": "SpokeRoute Pro",
+  "webDir": "mvp",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "webContentsDebuggingEnabled": true
+  }
+}

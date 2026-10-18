@@ -1,0 +1,19 @@
+# Dependências
+node_modules/
+package-lock.json
+
+# Builds do Android e Capacitor
+android/app/build/
+android/build/
+android/.gradle/
+.gradle/
+build/
+*.apk
+*.aab
+
+# Configurações locais da IDE e Sistema
+local.properties
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

@@ -1,0 +1,27 @@
+{
+  "name": "spokeroute-pro",
+  "version": "1.0.0",
+  "description": "SpokeRoute Pro - Aplicativo de Otimização de Entregas e TSP",
+  "main": "mvp/index.html",
+  "scripts": {
+    "cap:add": "cap add android",
+    "cap:sync": "cap sync android",
+    "cap:open": "cap open android"
+  },
+  "keywords": [
+    "delivery",
+    "route-optimization",
+    "tsp",
+    "driver-app",
+    "android",
+    "apk"
+  ],
+  "author": "SpokeRoute Team",
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/geolocation": "^6.0.1"
+  }
+}
