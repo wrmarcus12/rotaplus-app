@@ -1,4 +1,4 @@
-name: 📱 Compilar APK do SpokeRoute Pro
+name: 📱 Compilar APK do Rota+
 
 on:
   push:
@@ -88,21 +88,21 @@ jobs:
       - name: 🏷️ Renomear e Preparar APK Final
         run: |
           mkdir -p output_apk
-          cp android/app/build/outputs/apk/debug/app-debug.apk output_apk/SpokeRoute-Pro-v1.0.apk
-          echo "APK gerado com sucesso em: output_apk/SpokeRoute-Pro-v1.0.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk output_apk/RotaPlus-v1.0.apk
+          echo "APK gerado com sucesso em: output_apk/RotaPlus-v1.0.apk"
           ls -la output_apk/
 
       - name: 📤 Publicar APK para Download (GitHub Artifacts)
         uses: actions/upload-artifact@v4
         with:
-          name: SpokeRoute-Pro-v1.0-APK
-          path: output_apk/SpokeRoute-Pro-v1.0.apk
+          name: RotaPlus-v1.0-APK
+          path: output_apk/RotaPlus-v1.0.apk
           retention-days: 30
 
       - name: 🚀 Criar Release Automática no GitHub (Opcional)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
-          files: output_apk/SpokeRoute-Pro-v1.0.apk
+          files: output_apk/RotaPlus-v1.0.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

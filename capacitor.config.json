@@ -1,6 +1,6 @@
 {
-  "appId": "com.spokeroute.driver",
-  "appName": "SpokeRoute Pro",
+  "appId": "com.rotaplus.driver",
+  "appName": "Rota+",
   "webDir": "mvp",
   "bundledWebRuntime": false,
   "server": {
