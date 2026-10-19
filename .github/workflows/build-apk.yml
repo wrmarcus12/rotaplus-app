@@ -14,6 +14,9 @@ jobs:
   build-apk:
     name: Gerar Arquivo APK para Android
     runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
     steps:
       - name: 📥 Clonar Repositório
@@ -77,11 +80,12 @@ jobs:
       - name: 🔑 Conceder Permissão de Execução ao Gradle Wrapper
         run: |
           chmod +x android/gradlew
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
       - name: 🔨 Compilar APK Debug
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: 🏷️ Renomear e Preparar APK Final
         run: |
