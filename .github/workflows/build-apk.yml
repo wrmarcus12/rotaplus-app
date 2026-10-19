@@ -30,9 +30,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: 🤖 Configurar Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: 📦 Instalar Dependências do Capacitor
         run: |
           npm install --no-audit
