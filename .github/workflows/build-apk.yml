@@ -6,15 +6,9 @@ on:
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: 'Tipo de Build (Debug ou Release não assinado)'
-        required: true
-        default: 'debug'
-        type: choice
-        options:
-          - debug
-          - release
+
+permissions:
+  contents: write
 
 jobs:
   build-apk:
@@ -30,20 +24,18 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-          cache: 'gradle'
 
       - name: 🟢 Configurar Node.js (20)
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: 🤖 Configurar Android SDK
         uses: android-actions/setup-android@v3
 
       - name: 📦 Instalar Dependências do Capacitor
         run: |
-          npm ci || npm install
+          npm install --no-audit
 
       - name: ⚙️ Inicializar Projeto Android com Capacitor
         run: |
@@ -55,13 +47,22 @@ jobs:
 
       - name: 🛡️ Injetar Permissões de GPS e Redes no AndroidManifest.xml
         run: |
-          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
-          if grep -q "ACCESS_FINE_LOCATION" "$MANIFEST_PATH"; then
-            echo "Permissões de GPS já configuradas."
-          else
-            echo "Injetando permissões de GPS e Geolocalização..."
-            sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-feature android:name="android.hardware.location.gps" android:required="false" />' "$MANIFEST_PATH"
-          fi
+          python3 -c "
+          path = 'android/app/src/main/AndroidManifest.xml'
+          content = open(path).read()
+          perms = '''    <uses-permission android:name=\"android.permission.INTERNET\" />
+              <uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\" />
+              <uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\" />
+              <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\" />
+              <uses-feature android:name=\"android.hardware.location.gps\" android:required=\"false\" />
+          '''
+          if 'ACCESS_FINE_LOCATION' not in content:
+              content = content.replace('<application', perms + '    <application')
+              open(path, 'w').write(content)
+              print('Permissões injetadas com sucesso.')
+          else:
+              print('Permissões já existentes.')
+          "
 
       - name: 🎨 Atualizar Ícone do Aplicativo no Android
         run: |
@@ -90,7 +91,7 @@ jobs:
           mkdir -p output_apk
           cp android/app/build/outputs/apk/debug/app-debug.apk output_apk/RotaPlus-v1.0.apk
           echo "APK gerado com sucesso em: output_apk/RotaPlus-v1.0.apk"
-          ls -la output_apk/
+          ls -lh output_apk/
 
       - name: 📤 Publicar APK para Download (GitHub Artifacts)
         uses: actions/upload-artifact@v4
@@ -99,10 +100,16 @@ jobs:
           path: output_apk/RotaPlus-v1.0.apk
           retention-days: 30
 
-      - name: 🚀 Criar Release Automática no GitHub (Opcional)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
+      - name: 🚀 Publicar APK no GitHub Releases (Download Direto)
+        uses: softprops/action-gh-release@v2
+        if: success()
         with:
+          tag_name: v1.0
+          name: "Rota+ Driver v1.0 (APK)"
+          body: |
+            ### 📱 Rota+ Driver v1.0
+            
+            Toque no link **RotaPlus-v1.0.apk** abaixo diretamente do navegador do seu celular para baixar e instalar o aplicativo!
           files: output_apk/RotaPlus-v1.0.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
