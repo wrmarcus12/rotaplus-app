@@ -33,7 +33,11 @@ jobs:
         with:
           node-version: 20
 
-      - name: 📦 Instalar Dependências do Capacitor
+      - name: 📜 Aceitar Licenças do Android SDK
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: 📦 Instalar Dependências do Projeto
         run: |
           npm install --no-audit
 
@@ -45,39 +49,7 @@ jobs:
           fi
           npx cap sync android
 
-      - name: 🛡️ Injetar Permissões de GPS e Redes no AndroidManifest.xml
-        run: |
-          python3 -c "
-          path = 'android/app/src/main/AndroidManifest.xml'
-          content = open(path).read()
-          perms = '''    <uses-permission android:name=\"android.permission.INTERNET\" />
-              <uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\" />
-              <uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\" />
-              <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\" />
-              <uses-feature android:name=\"android.hardware.location.gps\" android:required=\"false\" />
-          '''
-          if 'ACCESS_FINE_LOCATION' not in content:
-              content = content.replace('<application', perms + '    <application')
-              open(path, 'w').write(content)
-              print('Permissões injetadas com sucesso.')
-          else:
-              print('Permissões já existentes.')
-          "
-
-      - name: 🎨 Atualizar Ícone do Aplicativo no Android
-        run: |
-          if [ -f "mvp/icon.png" ]; then
-            echo "Configurando ícones do aplicativo..."
-            for dir in android/app/src/main/res/mipmap-*; do
-              if [ -d "$dir" ]; then
-                cp mvp/icon.png "$dir/ic_launcher.png"
-                cp mvp/icon.png "$dir/ic_launcher_round.png"
-                cp mvp/icon.png "$dir/ic_launcher_foreground.png" 2>/dev/null || true
-              fi
-            done
-          fi
-
-      - name: 🔑 Conceder Permissão de Execução ao Gradle Wrapper
+      - name: 🔑 Configurar Gradle Wrapper e local.properties
         run: |
           chmod +x android/gradlew
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
@@ -85,9 +57,17 @@ jobs:
       - name: 🔨 Compilar APK Debug
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle_build.log
+
+      - name: 📋 Salvar Log da Compilação (Debug em caso de erro)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: gradle_build.log
 
       - name: 🏷️ Renomear e Preparar APK Final
+        if: success()
         run: |
           mkdir -p output_apk
           cp android/app/build/outputs/apk/debug/app-debug.apk output_apk/RotaPlus-v1.0.apk
@@ -95,6 +75,7 @@ jobs:
           ls -lh output_apk/
 
       - name: 📤 Publicar APK para Download (GitHub Artifacts)
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: RotaPlus-v1.0-APK
@@ -102,8 +83,8 @@ jobs:
           retention-days: 30
 
       - name: 🚀 Publicar APK no GitHub Releases (Download Direto)
-        uses: softprops/action-gh-release@v2
         if: success()
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0
           name: "Rota+ Driver v1.0 (APK)"
