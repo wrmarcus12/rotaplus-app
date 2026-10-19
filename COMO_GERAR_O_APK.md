@@ -19,8 +19,8 @@ Configuramos uma esteira profissional automatizada utilizando **Capacitor 6** e 
 Abra o terminal (PowerShell) nesta pasta (`c:\Users\Spinola\Documents\Projetos\Aplicativo para entregas`) e execute apenas estes 2 comandos (substituindo pelo link do seu repositório criado no GitHub):
 
 ```powershell
-# 1. Vincule o seu repositório do GitHub (troque pelo seu usuário e nome do repo):
-git remote add origin https://github.com/SEU_USUARIO/rotaplus-app.git
+# 1. Vincule o seu repositório do GitHub:
+git remote add origin https://github.com/wrmarcus12/rotaplus-app.git
 
 # 2. Envie o código para o GitHub:
 git push -u origin main
